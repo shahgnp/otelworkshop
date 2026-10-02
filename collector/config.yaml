@@ -1,0 +1,37 @@
+# Receive OTLP from the workshop application on standard gRPC and HTTP ports.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Batch reduces export overhead. It also means output arrives in groups.
+  batch:
+
+  # Lab 2, Step D: uncomment this processor and add it to both pipelines.
+  # resource/workshop:
+  #   attributes:
+  #     - key: deployment.environment
+  #       value: workshop
+  #       action: upsert
+
+exporters:
+  # Print detailed telemetry to this Collector process. There is no backend in this session.
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    # Metrics flow: application -> OTLP receiver -> batch -> terminal output.
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    # Logs take their own pipeline. Traces are intentionally not configured.
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
