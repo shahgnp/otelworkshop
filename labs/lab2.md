@@ -117,6 +117,8 @@ Start with `app/lab1-solution`. The Dockerfile compiles that host-edited folder 
 
    ```bash
    ./scripts/load-docker.sh
+   ```
+   ```bash
    ./scripts/logs-collector.sh
    ```
 
@@ -141,7 +143,7 @@ Start with `app/lab1-solution`. The Dockerfile compiles that host-edited folder 
 
    > **Observe**: `http.server.request.duration` is a histogram in seconds. `service.instance.id` is supplied by the pinned SDK and identifies this running process. Trace/span IDs can also appear on logs because ASP.NET Core creates request activities; this is how logs link to traces next session, even though no traces pipeline exists here.
 
-6. Answer Lab 1’s two-instance question. Scale the app, wait for both health checks to run, then follow Collector output again.
+6. Scale the app, wait for both health checks to run, then follow Collector output again.
 
    ```bash
    LAB=lab1-solution docker compose --profile collector up -d --scale app=2
@@ -149,42 +151,3 @@ Start with `app/lab1-solution`. The Dockerfile compiles that host-edited folder 
    ```
 
    **Expected result:** each app process emits a distinct `service.instance.id`; the health checks alone create records from both replicas.
-
-   > **Observe**: Now the Collector gives the answer that native stdout/counters could not: a common signal stream retains which instance emitted each record. `service.name` groups a service; `service.instance.id` separates its running instances.
-
-7. Step D: enrich every signal in the Collector. In `collector/config.yaml`, uncomment and use this processor:
-
-   ```yaml
-  resource/workshop:
-    attributes:
-      - key: deployment.environment
-        value: workshop
-        action: upsert
-   ```
-
-   Change both pipeline processor lines to:
-
-   ```yaml
-      processors: [resource/workshop, batch]
-   ```
-
-   Restart only the Collector, then generate load.
-
-   ```bash
-   docker compose restart collector
-   ./scripts/load-docker.sh
-   ```
-
-   **Expected result:** `deployment.environment: Str(workshop)` appears in resource attributes for metrics and logs.
-
-   > **Observe**: A Collector processor enriches every signal without rebuilding the application image. This is useful when the platform owns deployment metadata.
-
-8. Step E: make the custom Meter silently disappear. Temporarily remove `.AddMeter(OrderTelemetry.MeterName)` from the metrics chain in `Program.cs`, then rebuild with the command from step 2 and run load.
-
-   **Expected result:** built-in runtime and ASP.NET Core metrics remain, but `orders.placed` and `orders.processing.duration` disappear from Collector output. Restore exactly:
-
-   ```csharp
-   .AddMeter(OrderTelemetry.MeterName)
-   ```
-
-   > **Observe**: A custom Meter is not exported merely because the SDK exists. It requires an exact subscription; this common failure is silent.
