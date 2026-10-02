@@ -126,4 +126,3 @@ Run native .NET logs and metrics inside containers, then see why per-instance ob
    **Expected result:** `app-1` and `app-2` run independently, mapped to 8080 and 8081 in the validated setup.
 
    > **Observe**: Each instance has separate stdout and in-memory counters. Which instance is slow? Which one produced this error? You cannot tell from here.
-## Checkpoint questions
